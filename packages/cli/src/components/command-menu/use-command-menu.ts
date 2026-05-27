@@ -1,6 +1,5 @@
 import { ScrollBoxRenderable } from "@opentui/core";
-import { RefObject, useMemo, useState } from "react";
-import { Command } from "../commands-menu/types";
+import { useMemo, useState, type RefObject } from "react";
 
 type UseCommandMenuReturn = {
   showCommandMenu: boolean;
@@ -15,6 +14,7 @@ type UseCommandMenuReturn = {
 import { useKeyboard } from "@opentui/react";
 import React from "react";
 import { getFilteredCommands } from "../commands-menu/filter-commands";
+import type { Command } from "../commands-menu/types";
 
 export function useCommandMenu(): UseCommandMenuReturn {
   const [textValue, setTextValue] = useState("");
