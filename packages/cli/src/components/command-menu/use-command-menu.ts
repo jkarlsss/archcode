@@ -12,20 +12,24 @@ type UseCommandMenuReturn = {
   setSelectedIndex: (index: number) => void;
 };
 
-import React from 'react'
-import { getFilteredCommands } from "../commands-menu/filter-commands";
 import { useKeyboard } from "@opentui/react";
+import React from "react";
+import { getFilteredCommands } from "../commands-menu/filter-commands";
 
 export function useCommandMenu(): UseCommandMenuReturn {
-  const [textValue, setTextValue] = useState("second");
+  const [textValue, setTextValue] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showCommandMenu, setShowCommandMenu] = useState(false);
 
   const scrollRef = React.useRef<ScrollBoxRenderable | null>(null);
 
-  const commandQuery = showCommandMenu && textValue.startsWith("/") ? textValue.slice(1) : "";
+  const commandQuery =
+    showCommandMenu && textValue.startsWith("/") ? textValue.slice(1) : "";
 
-  const filteredCommands = useMemo(() => getFilteredCommands(commandQuery), [commandQuery]);
+  const filteredCommands = useMemo(
+    () => getFilteredCommands(commandQuery),
+    [commandQuery],
+  );
 
   const handleContentChange = (text: string) => {
     setTextValue(text);
@@ -50,11 +54,11 @@ export function useCommandMenu(): UseCommandMenuReturn {
     if (command) {
       setShowCommandMenu(false);
     }
-    return command;
+    if (!showCommandMenu) return;
   };
 
   useKeyboard((key) => {
-    if (!setShowCommandMenu) return;
+    if (!showCommandMenu) return;
 
     if (key.name === "escape") {
       key.preventDefault();
@@ -87,7 +91,7 @@ export function useCommandMenu(): UseCommandMenuReturn {
         return newIndex;
       });
     }
-  })
+  });
 
   return {
     showCommandMenu,
@@ -96,6 +100,6 @@ export function useCommandMenu(): UseCommandMenuReturn {
     scrollRef,
     handleContentChange,
     resolveCommand,
-    setSelectedIndex
+    setSelectedIndex,
   };
 }
