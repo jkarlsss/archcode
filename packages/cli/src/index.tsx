@@ -6,38 +6,27 @@ import { DialogProvider } from "./providers/dialog";
 import { KeyboardLayerProvider } from "./providers/keyboard-layer";
 import { ThemeProvider, useTheme } from "./providers/theme";
 import { ToastProvider } from "./providers/toast";
+import { createMemoryRouter, RouterProvider } from "react-router";
+import { RootLayout } from "./layouts/root-layout";
+import { Home } from "./screens/home";
+import { NewSessions } from "./screens/new-sessions";
+import { Session } from "./screens/session";
 
-function ThemedRoot() {
-  const { colors } = useTheme();
-
-  return (
-    <box
-      alignItems="center"
-      justifyContent="center"
-      backgroundColor={colors.background}
-      width={"100%"}
-      height={"100%"}
-      gap={2}
-    >
-      <Header />
-      <box width={"100%"} maxWidth={78} paddingX={2}>
-        <InputBars onSubmit={() => {}} />
-      </box>
-    </box>
-  );
-}
+const router = createMemoryRouter([
+  {
+    path: "/",
+    element: <RootLayout />,
+    children: [
+      { index: true, element: <Home /> },
+      { path: "sessions/new", element: <NewSessions />},
+      { path: "sessions/:id", element: <Session /> }
+    ]
+  }
+])
 
 function App() {
   return (
-    <ThemeProvider>
-      <KeyboardLayerProvider>
-        <DialogProvider>
-          <ToastProvider>
-            <ThemedRoot />
-          </ToastProvider>
-        </DialogProvider>
-      </KeyboardLayerProvider>
-    </ThemeProvider>
+    <RouterProvider router={router} />
   );
 }
 
