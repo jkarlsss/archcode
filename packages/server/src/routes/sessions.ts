@@ -3,6 +3,7 @@ import { MessageStatus, Mode, Role } from "@archcode/database/enums";
 import { findSupportChatModel } from "@archcode/shared";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 
 const createSessionSchema = z.object({
@@ -54,7 +55,7 @@ const app = new Hono()
     // })
 
     const id = c.req.param("id");
-    const session = await db.session.findFirstOrThrow({
+    const session = await db.session.findFirst({
       where: {
         id,
       },
@@ -66,6 +67,9 @@ const app = new Hono()
         },
       },
     });
+    if (!session) {
+      throw new HTTPException(404, { message: "Session not found" });
+    }
     return c.json(session);
   })
   .post("/", createSessionValidator, async (c) => {
