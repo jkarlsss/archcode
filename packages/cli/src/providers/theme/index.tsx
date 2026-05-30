@@ -1,6 +1,12 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { createContext, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 import { DEFAULT_THEME, THEMES, type Theme, type ThemeColors } from "./theme";
 
 const CONFIG_DIR = resolve(process.cwd(), "config");
@@ -42,11 +48,7 @@ function saveThemeNameToDisk(themeName: string) {
       mkdirSync(CONFIG_DIR, { recursive: true });
     }
 
-    writeFileSync(
-      CONFIG_PATH,
-      JSON.stringify({ themeName }, null, 2),
-      "utf8"
-    );
+    writeFileSync(CONFIG_PATH, JSON.stringify({ themeName }, null, 2), "utf8");
 
     console.log("Saved theme:", themeName);
     console.log("Path:", CONFIG_PATH);
@@ -58,7 +60,8 @@ function saveThemeNameToDisk(themeName: string) {
 type ThemeContextValue = {
   colors: ThemeColors;
   currentTheme: Theme;
-  setTheme: (themeName: string) => void;
+  previewTheme: (themeName: string) => void;
+  commitTheme: (themeName: string) => void;
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -70,18 +73,23 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return THEMES.find((t) => t.name === themeName) || DEFAULT_THEME;
   }, [themeName]);
 
-  const setTheme = (themeName: string) => {
+  const previewTheme = useCallback((themeName: string) => {
+    setThemeName(themeName);
+  }, []);
+
+  const commitTheme = useCallback((themeName: string) => {
     setThemeName(themeName);
     saveThemeNameToDisk(themeName);
-  };
+  }, []);
 
   const value = useMemo(
     () => ({
       colors: currentTheme.colors,
       currentTheme,
-      setTheme,
+      previewTheme,
+      commitTheme,
     }),
-    [currentTheme],
+    [currentTheme, previewTheme, commitTheme],
   );
 
   return (

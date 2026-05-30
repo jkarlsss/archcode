@@ -1,15 +1,15 @@
 import { TextareaRenderable, type KeyBinding } from "@opentui/core";
 import { useRenderer } from "@opentui/react";
 import { useCallback, useEffect, useRef } from "react";
-import { useKeyboardLayer } from "../providers/keyboard-layer/indext";
+import { useDialog } from "../providers/dialog";
+import { useKeyboardLayer } from "../providers/keyboard-layer/index";
+import { useTheme } from "../providers/theme";
 import { useToast } from "../providers/toast";
 import { EmptyBorder } from "./border";
 import { CommandMenu } from "./command-menu";
 import type { Command } from "./command-menu/types";
 import { useCommandMenu } from "./command-menu/use-command-menu";
 import { StatusBar } from "./status-bar";
-import { useDialog } from "../providers/dialog";
-import { useTheme } from "../providers/theme";
 
 type InputBarsProps = {
   onSubmit: (value: string) => void;
@@ -47,8 +47,7 @@ export function InputBars({ onSubmit, disabled }: InputBarsProps) {
     if (!textarea) return;
 
     handleContentChange(textarea.plainText);
-  }, []);
-
+  }, [handleContentChange]);
   const handleSubmit = useCallback(() => {
     if (disabled) return;
 
@@ -79,9 +78,8 @@ export function InputBars({ onSubmit, disabled }: InputBarsProps) {
         textarea.insertText(command.value + " ");
       }
     },
-    [renderer, toast],
+    [renderer, toast, dialog],
   );
-
   const handleCommandExecute = useCallback(
     (index: number) => {
       const command = resolveCommand(index);

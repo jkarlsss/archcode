@@ -5,7 +5,7 @@ import {
 } from "@opentui/core";
 import { useKeyboard } from "@opentui/react";
 import { useCallback, useRef, useState } from "react";
-import { useKeyboardLayer } from "../providers/keyboard-layer/indext";
+import { useKeyboardLayer } from "../providers/keyboard-layer";
 import { useTheme } from "../providers/theme";
 
 const MAX_VISIBLE_ITEMS = 6;

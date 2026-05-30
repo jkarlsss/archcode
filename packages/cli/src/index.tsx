@@ -3,7 +3,7 @@ import { createRoot } from "@opentui/react";
 import { Header } from "./components/header";
 import { InputBars } from "./components/input-bars";
 import { DialogProvider } from "./providers/dialog";
-import { KeyboardLayerProvider } from "./providers/keyboard-layer/indext";
+import { KeyboardLayerProvider } from "./providers/keyboard-layer";
 import { ThemeProvider, useTheme } from "./providers/theme";
 import { ToastProvider } from "./providers/toast";
 

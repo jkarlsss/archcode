@@ -7,34 +7,36 @@ import { THEMES, type Theme } from "../providers/theme/theme";
 export const ThemeDialogContent = () => {
   const dialog = useDialog();
 
-  const { setTheme, currentTheme } = useTheme();
+  const { previewTheme, commitTheme } = useTheme();
 
-  const originalThemeRef = useRef(currentTheme);
+  const originalThemeRef = useRef(commitTheme);
 
   const confirmedRef = useRef(false);
 
   useEffect(() => {
     return () => {
       if (!confirmedRef.current) {
-        setTheme(originalThemeRef.current.name);
+        previewTheme(originalThemeRef.current.name);
       }
     };
-  }, [setTheme]);
+  }, [previewTheme]);
 
   const handleSelect = useCallback(
     (theme: Theme) => {
       confirmedRef.current = true;
-      setTheme(theme.name);
+
+      commitTheme(theme.name);
+
       dialog.close();
     },
-    [dialog.close, setTheme],
+    [commitTheme, dialog.close],
   );
 
   const handleHighlight = useCallback(
     (theme: Theme) => {
-      setTheme(theme.name);
+      previewTheme(theme.name);
     },
-    [setTheme],
+    [previewTheme],
   );
 
   return (
@@ -50,7 +52,6 @@ export const ThemeDialogContent = () => {
           {theme.name === originalThemeRef.current.name
             ? "\u0020\u2022\u0020"
             : "\u0020\u0020\u0020"}
-
           {theme.name}
         </text>
       )}

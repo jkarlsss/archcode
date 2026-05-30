@@ -16,7 +16,7 @@ import { useKeyboard } from "@opentui/react";
 import React from "react";
 import { getFilteredCommands } from "./filter-commands";
 import type { Command } from "./types";
-import { useKeyboardLayer } from "../../providers/keyboard-layer/indext";
+import { useKeyboardLayer } from "../../providers/keyboard-layer";
 
 export function useCommandMenu(): UseCommandMenuReturn {
   const [textValue, setTextValue] = useState("");
