@@ -1,11 +1,15 @@
 import { TextareaRenderable, type KeyBinding } from "@opentui/core";
 import { useRenderer } from "@opentui/react";
 import { useCallback, useEffect, useRef } from "react";
-import { useCommandMenu } from "../src/components/command-menu/use-command-menu";
-import { CommandMenu } from "../src/components/commands-menu";
+import { useKeyboardLayer } from "../providers/keyboard-layer/indext";
+import { useToast } from "../providers/toast";
 import { EmptyBorder } from "./border";
+import { CommandMenu } from "./command-menu";
+import type { Command } from "./command-menu/types";
+import { useCommandMenu } from "./command-menu/use-command-menu";
 import { StatusBar } from "./status-bar";
-import type { Command } from "../src/components/commands-menu/types";
+import { useDialog } from "../providers/dialog";
+import { useTheme } from "../providers/theme";
 
 type InputBarsProps = {
   onSubmit: (value: string) => void;
@@ -23,6 +27,10 @@ export function InputBars({ onSubmit, disabled }: InputBarsProps) {
   const textareaRef = useRef<TextareaRenderable>(null);
   const onSubmitRef = useRef<() => void>(() => {});
   const renderer = useRenderer();
+  const toast = useToast();
+  const dialog = useDialog();
+  const { isTopLayer, setResponder } = useKeyboardLayer();
+  const { colors } = useTheme();
 
   const {
     showCommandMenu,
@@ -33,13 +41,6 @@ export function InputBars({ onSubmit, disabled }: InputBarsProps) {
     resolveCommand,
     setSelectedIndex,
   } = useCommandMenu();
-
-  const handleCommandExecute = useCallback((
-    index: number
-  ) => {
-    const command = resolveCommand(index);
-    handleCommand(command);
-  }, [])
 
   const handleTextareaContentChange = useCallback(() => {
     const textarea = textareaRef.current;
@@ -71,12 +72,22 @@ export function InputBars({ onSubmit, disabled }: InputBarsProps) {
       if (command.action) {
         command.action({
           exit: () => renderer.destroy(),
+          toast,
+          dialog,
         });
       } else {
         textarea.insertText(command.value + " ");
       }
     },
-    [renderer],
+    [renderer, toast],
+  );
+
+  const handleCommandExecute = useCallback(
+    (index: number) => {
+      const command = resolveCommand(index);
+      handleCommand(command);
+    },
+    [handleCommand, resolveCommand],
   );
 
   useEffect(() => {
@@ -100,11 +111,27 @@ export function InputBars({ onSubmit, disabled }: InputBarsProps) {
     handleSubmit();
   };
 
+  useEffect(() => {
+    setResponder("base", () => {
+      if (disabled) return false;
+
+      const textarea = textareaRef.current;
+
+      if (textarea && textarea.plainText.length > 0) {
+        textarea.setText("");
+        return true;
+      }
+      return false;
+    });
+
+    return () => setResponder("base", null);
+  }, [disabled, setResponder]);
+
   return (
     <box width={"100%"} alignItems="center">
       <box
         border={["left"]}
-        borderColor="cyan"
+        borderColor={colors.primary}
         customBorderChars={{
           ...EmptyBorder,
           vertical: "┃", // thicker than |
@@ -123,7 +150,7 @@ export function InputBars({ onSubmit, disabled }: InputBarsProps) {
           position="relative"
           paddingX={2}
           paddingY={1}
-          backgroundColor={"#1A1A24"}
+          backgroundColor={colors.surface}
           gap={1}
           justifyContent="center"
         >
@@ -134,9 +161,9 @@ export function InputBars({ onSubmit, disabled }: InputBarsProps) {
               left={0}
               width={"100%"}
               zIndex={10}
-              backgroundColor="#1A1A24"
+              backgroundColor={colors.surface}
             >
-              <CommandMenu 
+              <CommandMenu
                 query=""
                 selectedIndex={selectedIndex}
                 scrollRef={scrollRef}
@@ -149,7 +176,7 @@ export function InputBars({ onSubmit, disabled }: InputBarsProps) {
             keyBindings={TEXTAREA_KEY_BINDINGS}
             ref={textareaRef}
             onContentChange={handleTextareaContentChange}
-            focused={!disabled}
+            focused={!disabled && (isTopLayer("base") || isTopLayer("command"))}
             placeholder={`Give me a task... "Create an ecommerce website"`}
           />
           <StatusBar />
