@@ -1,6 +1,7 @@
 import { useTheme } from "../providers/theme";
+import type { ReactNode } from "react";
 
-export function ThemedRoot({ children }: { children: React.ReactNode }) {
+export function ThemedRoot({ children }: { children: ReactNode }) {
   const { colors } = useTheme();
 
   return (

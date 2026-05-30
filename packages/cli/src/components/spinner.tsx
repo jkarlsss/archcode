@@ -66,23 +66,18 @@ export function Spinner({ message }: { message?: string }) {
     setDisplayMessage("");
     if (!targetMessage) return;
 
-    let index = 0;
-
     const interval = setInterval(() => {
       // Use the functional state update to safely append characters
       setDisplayMessage((prev) => {
         // If we've already typed the whole string, clear interval and return
-        if (index >= targetMessage.length) {
+        if (prev.length >= targetMessage.length) {
           clearInterval(interval);
           return prev;
         }
-        
-        const nextChar = targetMessage[index];
-        index += 1;
-        return prev + nextChar;
+
+        return prev + targetMessage[prev.length];
       });
     }, 120);
-
     return () => clearInterval(interval);
   }, [targetMessage]);
 
