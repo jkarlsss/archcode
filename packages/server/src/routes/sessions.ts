@@ -1,4 +1,4 @@
-import { db } from "@archcode/database";
+import { db } from "@archcode/database/client";
 import { MessageStatus, Mode, Role } from "@archcode/database/enums";
 import { findSupportChatModel } from "@archcode/shared";
 import { zValidator } from "@hono/zod-validator";
