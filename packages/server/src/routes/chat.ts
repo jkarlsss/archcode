@@ -20,7 +20,7 @@ const submitValidator = zValidator("json", submitSchema, (result, c) => {
   }
 });
 
-const activeResumeSessionUds = new Set<string>();
+const activeResumeSessionIds = new Set<string>();
 
 function buildConversationHistory(
   messages: {
@@ -74,7 +74,7 @@ async function streamAIResponse(
   let fullText = "";
 
   const persistentInterruptedMessage = async () => {
-    if (fullText.length > 0) {
+    if (fullText.length === 0) {
       return;
     }
 
@@ -92,7 +92,6 @@ async function streamAIResponse(
       },
     });
   };
-
   try {
     const result = aiStreamText({
       model: resolvedModel.model,
@@ -197,9 +196,11 @@ const app = new Hono()
       return c.json({ error: "Unsupported model" }, 400);
     }
 
-    if (activeResumeSessionUds.has(sessionId)) {
+    if (activeResumeSessionIds.has(sessionId)) {
       return c.json({ error: "Session is already resuming" }, 400);
     }
+
+    activeResumeSessionIds.add(sessionId);
 
     const history = buildConversationHistory(session.messages);
 
@@ -222,11 +223,11 @@ const app = new Hono()
               abortController,
             });
           } finally {
-            activeResumeSessionUds.delete(sessionId);
+            activeResumeSessionIds.delete(sessionId);
           }
         },
         async (err, stream) => {
-          activeResumeSessionUds.delete(sessionId);
+          activeResumeSessionIds.delete(sessionId);
           const message = err instanceof Error ? err.message : String(err);
           const errorEvent: ChatStreamEvent = { type: "error", message };
           await stream.writeSSE({
@@ -236,7 +237,7 @@ const app = new Hono()
         },
       );
     } catch (error) {
-      activeResumeSessionUds.delete(sessionId);
+      activeResumeSessionIds.delete(sessionId);
       throw error;
     }
   })

@@ -95,4 +95,4 @@ export function findSupportChatModel(modelId: string) {
   return SUPPORT_CHAT_MODELS.find((model) => model.id === modelId);
 }
 
-export const DEFAULT_CHAT_MODEL_ID: SupportChatModelId = "gemini-3-flash-preview";
+export const DEFAULT_CHAT_MODEL_ID: SupportChatModelId = "gemini-3.5-flash";

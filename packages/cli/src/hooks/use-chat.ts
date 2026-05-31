@@ -125,7 +125,7 @@ export function useChat(sessionId: string, initialMessage: Message[]) {
         },
       ]);
     },
-    [],
+    [updateMessages],
   );
 
   const clearStream = useCallback(
@@ -205,7 +205,10 @@ export function useChat(sessionId: string, initialMessage: Message[]) {
                 parts: [...parts],
               },
             ]);
-            break;
+            
+            // Clear stream state immediately to avoid duplicate rendering
+            clearStream(activeStream.requestId);
+            return;
           }
           case "error": {
             updateMessages((prev) => [
