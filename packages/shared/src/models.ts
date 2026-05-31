@@ -3,7 +3,7 @@ export type ModelPricing = {
   outputUsdPerMillionTokens: number;
 };
 
-export type SupportProvider = "anthropic" | "openai";
+export type SupportProvider = "anthropic" | "openai" | "google";
 
 type SupportChatModelDefinition = {
   id: string;
@@ -59,6 +59,31 @@ export const SUPPORT_CHAT_MODELS = [
       inputUsdPerMillionTokens: 0.2,
       outputUsdPerMillionTokens: 1.25,
     },
+  },
+  // google
+  {
+    id: "gemini-3.5-flash",
+    provider: "google",
+    pricing: {
+      inputUsdPerMillionTokens: 1,
+      outputUsdPerMillionTokens: 10,
+    },
+  },
+  {
+    id: "gemini-3-flash-preview",
+    provider: "google",
+    pricing: {
+      inputUsdPerMillionTokens: 0.5,
+      outputUsdPerMillionTokens: 5,
+    },
+  },
+  {
+    id: "gemini-3.1-flash-lite",
+    provider: "google",
+    pricing: {
+      inputUsdPerMillionTokens: 0.2,
+      outputUsdPerMillionTokens: 1.25,
+    },
   }
 ] as const satisfies readonly SupportChatModelDefinition[];
 
@@ -70,4 +95,4 @@ export function findSupportChatModel(modelId: string) {
   return SUPPORT_CHAT_MODELS.find((model) => model.id === modelId);
 }
 
-export const DEFAULT_CHAT_MODEL_ID: SupportChatModelId = "claude-opus-4-6";
+export const DEFAULT_CHAT_MODEL_ID: SupportChatModelId = "gemini-3.5-flash";
