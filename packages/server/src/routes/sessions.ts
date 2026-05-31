@@ -2,10 +2,9 @@ import { db } from "@archcode/database/client";
 import { MessageStatus, Mode, Role } from "@archcode/database/enums";
 import { findSupportChatModel } from "@archcode/shared";
 import { zValidator } from "@hono/zod-validator";
-import { Hono } from "hono";
-import { HTTPException } from "hono/http-exception";
-import { z } from "zod";
 import * as Sentry from "@sentry/hono/bun";
+import { Hono } from "hono";
+import { z } from "zod";
 
 const createSessionSchema = z.object({
   title: z.string(),
@@ -27,10 +26,10 @@ const createSessionValidator = zValidator(
   createSessionSchema,
   (result, c) => {
     if (!result.success) {
-      Sentry.logger.warn("Session creation failed", { 
+      Sentry.logger.warn("Session creation failed", {
         path: c.req.path,
-        issues: result.error.issues.length
-       });
+        issues: result.error.issues.length,
+      });
       return c.json({ error: "Invalid request body" }, 400);
     }
   },
@@ -77,7 +76,10 @@ const app = new Hono()
       },
     });
     if (!session) {
-      Sentry.logger.warn("Session not found", { sessionId: id, userId: "mock-user" });
+      Sentry.logger.warn("Session not found", {
+        sessionId: id,
+        userId: "mock-user",
+      });
       return c.json({ error: "Session not found" }, 404);
     }
 
