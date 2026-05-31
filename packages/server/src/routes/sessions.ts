@@ -5,6 +5,7 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
+import * as Sentry from "@sentry/hono/bun";
 
 const createSessionSchema = z.object({
   title: z.string(),
@@ -26,6 +27,10 @@ const createSessionValidator = zValidator(
   createSessionSchema,
   (result, c) => {
     if (!result.success) {
+      Sentry.logger.warn("Session creation failed", { 
+        path: c.req.path,
+        issues: result.error.issues.length
+       });
       return c.json({ error: "Invalid request body" }, 400);
     }
   },
@@ -42,6 +47,10 @@ const app = new Hono()
         title: true,
         createdAt: true,
       },
+    });
+
+    Sentry.logger.info("List sessions", {
+      count: sessions.length,
     });
 
     return c.json(sessions);
@@ -68,8 +77,15 @@ const app = new Hono()
       },
     });
     if (!session) {
-      throw new HTTPException(404, { message: "Session not found" });
+      Sentry.logger.warn("Session not found", { sessionId: id, userId: "mock-user" });
+      return c.json({ error: "Session not found" }, 404);
     }
+
+    Sentry.logger.info("Load session", {
+      sessionId: id,
+      userId: "mock-user",
+    });
+
     return c.json(session);
   })
   .post("/", createSessionValidator, async (c) => {
@@ -98,6 +114,11 @@ const app = new Hono()
         include: {
           messages: true,
         },
+      });
+
+      Sentry.logger.info("Create session", {
+        sessionId: session.id,
+        title: session.title,
       });
 
       return c.json(session, 201);
