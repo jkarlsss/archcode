@@ -2,7 +2,7 @@ import { db } from "@archcode/database/client";
 import { MessageStatus, Mode, Role } from "@archcode/database/enums";
 import { findSupportChatModel } from "@archcode/shared";
 import { zValidator } from "@hono/zod-validator";
-import * as Sentry from "@sentry/hono/bun";
+import * as Sentry from "@sentry/hono/node";
 import { Hono } from "hono";
 import { z } from "zod";
 
