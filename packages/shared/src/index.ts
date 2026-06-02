@@ -6,7 +6,7 @@ export {
   type SupportChatModel,
   type SupportProvider,
   type ModelPricing,
-} from "./models";
+} from "./models.js";
 
 export {
   chatStreamEventSchema,
@@ -15,4 +15,4 @@ export {
   toolCallArgsSchema,
   type ChatStreamEvent,
   type MessagePart,
-} from "./schemas";
+} from "./schemas.js";

@@ -6,7 +6,7 @@ import { streamText as aiStreamText } from "ai";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
-import { isSupportedChatModel, resolveChatModel } from "../lib/model";
+import { isSupportedChatModel, resolveChatModel } from "../lib/model.js";
 
 const submitSchema = z.object({
   content: z.string(),
