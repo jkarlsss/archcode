@@ -3,8 +3,8 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 
 import * as Sentry from "@sentry/hono/bun";
-import chat from "./routes/chat.ts"; 
-import sessions from "./routes/sessions.ts";
+import chat from "./routes/chat.js";
+import sessions from "./routes/sessions.js";
 
 const app = new Hono();
 
