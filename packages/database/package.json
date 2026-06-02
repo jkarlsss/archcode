@@ -3,11 +3,24 @@
   "type": "module",
   "private": true,
   "exports": {
-    ".": "./src/index.ts",
-    "./client": "./src/client.ts",
-    "./enums": "./src/enums.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "bun": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./src/client.ts",
+      "bun": "./src/client.ts",
+      "default": "./dist/client.js"
+    },
+    "./enums": {
+      "types": "./src/enums.ts",
+      "bun": "./src/enums.ts",
+      "default": "./dist/enums.js"
+    }
   },
   "scripts": {
+    "build": "bun build src/index.ts src/client.ts src/enums.ts --outdir dist --target node --format esm",
     "db:generate": "bunx prisma generate",
     "db:push": "bunx prisma db push",
     "db:studio": "bunx prisma studio"
