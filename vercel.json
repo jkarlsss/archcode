@@ -1,8 +1,0 @@
-{
-  "functions": {
-    "packages/server/src/index.ts": {
-      "runtime": "bun@1.2.2"
-    }
-  },
-  "rewrites": [{ "source": "/(.*)", "destination": "/packages/server/src/index.ts" }]
-}
