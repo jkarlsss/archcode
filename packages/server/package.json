@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "bun run --hot src/index.ts",
-    "build": "bun run --bun next builds",
+    "build": "bun run --bun next build",
     "postinstall": "bun run --cwd ../database db:generate"
   },
   "dependencies": {
