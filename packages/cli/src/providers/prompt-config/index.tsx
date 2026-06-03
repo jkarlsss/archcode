@@ -2,7 +2,7 @@ import { Mode } from "@archcode/database/enums";
 import { DEFAULT_CHAT_MODEL_ID, type SupportChatModelId } from "@archcode/shared";
 import { createContext, useCallback, useContext, useState } from "react";
 
-type PrompConfigContextValue = {
+type PromptConfigContextValue = {
   mode: Mode;
   toggleMode: () => void;
   setMode: (mode: Mode) => void;
@@ -10,9 +10,9 @@ type PrompConfigContextValue = {
   setModel: (model: SupportChatModelId) => void;
 }
 
-const PromptConfigContext = createContext<PrompConfigContextValue | null>(null);
+const PromptConfigContext = createContext<PromptConfigContextValue | null>(null);
 
-export function usePromptConfig(): PrompConfigContextValue {
+export function usePromptConfig(): PromptConfigContextValue {
   const context = useContext(PromptConfigContext);
   if (!context) {
     throw new Error("usePromptConfig must be used within a PromptConfigProvider");

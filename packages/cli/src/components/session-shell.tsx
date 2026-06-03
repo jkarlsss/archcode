@@ -55,7 +55,7 @@ export function SessionShell({
 
         <box flexDirection="row" flexShrink={0} marginLeft={"auto"}>
           <text>tab</text>
-          <text attributes={TextAttributes.DIM}>&nbsp;agents</text>
+          <text attributes={TextAttributes.DIM}>{"\u00A0"}agents</text>{" "}
         </box>
       </box>
     </box>

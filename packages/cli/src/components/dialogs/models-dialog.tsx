@@ -1,10 +1,8 @@
 import { Mode } from "@archcode/database/enums";
+import type { SupportChatModelId } from "@archcode/shared";
 import { useCallback } from "react";
 import { useDialog } from "../../providers/dialog";
 import { DialogSearchList } from "../dialog-search-list";
-import type { SupportChatModelId } from "@archcode/shared";
-
-const AVAILABLE_MODES: Mode[] = [Mode.PLAN, Mode.BUILD];
 
 type ModelsDialogContentProps = {
   models: SupportChatModelId[];
