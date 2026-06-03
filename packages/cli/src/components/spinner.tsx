@@ -1,6 +1,12 @@
 import "opentui-spinner/react";
 import { useEffect, useState } from "react";
 import { useTheme } from "../providers/theme";
+import { Mode } from "@archcode/database/enums";
+
+type Props = {
+  message?: string;
+  mode?: Mode;
+};
 
 const spinnerMessages = [
   "thinking",
@@ -38,12 +44,13 @@ function getRandomMessage() {
   return spinnerMessages[Math.floor(Math.random() * spinnerMessages.length)];
 }
 
-export function Spinner({ message }: { message?: string }) {
+export function Spinner({ message, mode }: Props) {
   const { colors } = useTheme();
   const [targetMessage, setTargetMessage] = useState(
     message ?? getRandomMessage(),
   );
   const [displayMessage, setDisplayMessage] = useState("");
+  const activeColor = mode === Mode.PLAN ? colors.planMode : colors.primary;
 
   // 1. Handle switching target messages
   useEffect(() => {
@@ -89,7 +96,7 @@ export function Spinner({ message }: { message?: string }) {
       justifyContent="center"
     >
       <text>{displayMessage}</text>
-      <spinner name="dots" color={colors.primary} />
+      <spinner name="dots" color={activeColor} />
     </box>
   );
 }
