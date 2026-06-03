@@ -1,4 +1,5 @@
-import { ThemeDialogContent } from "../../dialogs";
+import { SUPPORT_CHAT_MODELS } from "@archcode/shared";
+import { AgentsDialogContent, ModelsDialogContent, SessionsDialogContent, ThemeDialogContent } from "../dialogs";
 import type { Command, CommandContext } from "./types";
 
 export const COMMANDS: Command[] = [
@@ -7,7 +8,7 @@ export const COMMANDS: Command[] = [
     description: "Create a new conversation",
     value: "/new",
     action: (ctx) => {
-      ctx.toast.show({ message: "Starting a new conversation..." });
+      ctx.navigate("/");
     }
   },
   {
@@ -15,7 +16,7 @@ export const COMMANDS: Command[] = [
     description: "Select an AI agent",
     value: "/agents",
     action: (ctx) => {
-      ctx.dialog.open({ title: "Select an AI agent", children: <text>Agent selection coming soon...</text> });
+      ctx.dialog.open({ title: "Select an AI agent", children: <AgentsDialogContent currentMode={ctx.mode} onSelectMode={ctx.setMode} /> });
     }
   },
   {
@@ -23,7 +24,7 @@ export const COMMANDS: Command[] = [
     description: "Select an AI model",
     value: "/models",
     action: (ctx) => {
-      ctx.dialog.open({ title: "Select an AI model", children: <text>Model selection coming soon...</text> });
+      ctx.dialog.open({ title: "Select an AI model", children: <ModelsDialogContent models={SUPPORT_CHAT_MODELS.map((model) => model.id)} onSelectModel={ctx.setModel} /> });
     }
   },
   {
@@ -31,7 +32,7 @@ export const COMMANDS: Command[] = [
     description: "Manage your conversations",
     value: "/sessions",
     action: (ctx) => {
-      ctx.toast.show({ message: "Opening sessions..." });
+      ctx.dialog.open({ title: "Sessions", children: <SessionsDialogContent /> });
     }
   },
   {

@@ -1,5 +1,5 @@
 import { TextareaRenderable, type KeyBinding } from "@opentui/core";
-import { useRenderer } from "@opentui/react";
+import { useKeyboard, useRenderer } from "@opentui/react";
 import { useCallback, useEffect, useRef } from "react";
 import { useDialog } from "../providers/dialog";
 import { useKeyboardLayer } from "../providers/keyboard-layer/index";
@@ -10,6 +10,9 @@ import { CommandMenu } from "./command-menu";
 import type { Command } from "./command-menu/types";
 import { useCommandMenu } from "./command-menu/use-command-menu";
 import { StatusBar } from "./status-bar";
+import { useNavigate } from "react-router";
+import { usePromptConfig } from "../providers/prompt-config";
+import { Mode } from "@archcode/database";
 
 type InputBarsProps = {
   onSubmit: (value: string) => void;
@@ -31,6 +34,8 @@ export function InputBars({ onSubmit, disabled }: InputBarsProps) {
   const dialog = useDialog();
   const { isTopLayer, setResponder } = useKeyboardLayer();
   const { colors } = useTheme();
+  const navigate = useNavigate();
+  const { mode, toggleMode, setMode, setModel } = usePromptConfig();
 
   const {
     showCommandMenu,
@@ -73,12 +78,16 @@ export function InputBars({ onSubmit, disabled }: InputBarsProps) {
           exit: () => renderer.destroy(),
           toast,
           dialog,
+          navigate,
+          mode,
+          setMode,
+          setModel
         });
       } else {
         textarea.insertText(command.value + " ");
       }
     },
-    [renderer, toast, dialog],
+    [renderer, toast, dialog, navigate, mode, setMode, setModel],
   );
   const handleCommandExecute = useCallback(
     (index: number) => {
@@ -109,6 +118,15 @@ export function InputBars({ onSubmit, disabled }: InputBarsProps) {
     handleSubmit();
   };
 
+  useKeyboard((key) => {
+    if (disabled) return;
+    if (!isTopLayer("base")) return;
+    if (key.name === "tab") {
+      key.preventDefault();
+      toggleMode();
+    };
+  })
+
   useEffect(() => {
     setResponder("base", () => {
       if (disabled) return false;
@@ -129,7 +147,7 @@ export function InputBars({ onSubmit, disabled }: InputBarsProps) {
     <box width={"100%"} alignItems="center">
       <box
         border={["left"]}
-        borderColor={colors.primary}
+        borderColor={mode === Mode.PLAN ? colors.planMode : colors.primary}
         customBorderChars={{
           ...EmptyBorder,
           vertical: "┃", // thicker than |

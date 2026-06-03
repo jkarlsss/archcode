@@ -1,4 +1,5 @@
 import { TextAttributes } from "@opentui/core";
+import { usePromptConfig } from "../providers/prompt-config";
 import { InputBars } from "./input-bars";
 import { Spinner } from "./spinner";
 
@@ -17,6 +18,7 @@ export function SessionShell({
   loading,
   interruptible,
 }: Props) {
+  const { mode } = usePromptConfig();
   return (
     <box
       flexDirection="column"
@@ -42,26 +44,18 @@ export function SessionShell({
         gap={2}
         paddingLeft={1}
       >
-        <box
-          flexDirection="row"
-          alignItems="center"
-          gap={2}
-        >
+        <box flexDirection="row" alignItems="center" gap={2}>
           {loading ? (
             <>
-              <Spinner />
+              <Spinner mode={mode} />
               {interruptible ? <text>esc to interrupt</text> : null}
             </>
           ) : null}
         </box>
 
-        <box
-          flexDirection="row"
-          flexShrink={0}
-          marginLeft={"auto"}
-        >
+        <box flexDirection="row" flexShrink={0} marginLeft={"auto"}>
           <text>tab</text>
-          <text attributes={TextAttributes.DIM}>agents</text>
+          <text attributes={TextAttributes.DIM}>&nbsp;agents</text>
         </box>
       </box>
     </box>
