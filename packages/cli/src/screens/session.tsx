@@ -1,21 +1,23 @@
-import {
-  DEFAULT_CHAT_MODEL_ID,
-  type SupportChatModelId,
-} from "@archcode/shared";
+import { MessageStatus } from "@archcode/database/enums";
+import { messagePartsSchema, type SupportChatModelId } from "@archcode/shared";
+import { useKeyboard } from "@opentui/react";
 import type { InferResponseType } from "hono";
+import prettyMs from "pretty-ms";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { z } from "zod";
 import { BotMessage, ErrorMessage, UserMessage } from "../components/messages";
 import { SessionShell } from "../components/session-shell";
-import { useChat, type Message } from "../hooks/use-chat";
+import {
+  useChat,
+  type ClientMessagePart,
+  type Message,
+} from "../hooks/use-chat";
 import { apiClient } from "../lib/api-client";
 import { getErrorMessage } from "../lib/http-errors";
-import { useToast } from "../providers/toast";
-import { MessageStatus } from "@archcode/database/enums";
-import prettyMs from "pretty-ms";
 import { useKeyboardLayer } from "../providers/keyboard-layer";
-import { useKeyboard } from "@opentui/react";
+import { usePromptConfig } from "../providers/prompt-config";
+import { useToast } from "../providers/toast";
 
 type SessionData = InferResponseType<
   (typeof apiClient.sessions)[":id"]["$get"],
@@ -48,14 +50,24 @@ function mapDbMessages(dbMessages: SessionData["messages"]): Message[] {
       };
     }
 
+    const parsedParts =
+      msg.parts === null ? null : messagePartsSchema.safeParse(msg.parts);
+    const parts: ClientMessagePart[] = parsedParts?.success
+      ? parsedParts.data.map((p) =>
+          p.type === "tool-call" ? { ...p, status: "done" as const } : p,
+        )
+      : [];
+
     return {
       id: msg.id,
       role: "assistant",
       content: msg.content,
       mode: msg.mode,
       model: msg.model as SupportChatModelId,
-      parts: [{ type: "text", text: msg.content }],
-      ...(msg.duration != null ? { duration: prettyMs(msg.duration * 1000) } : {}),
+      parts,
+      ...(msg.duration != null
+        ? { duration: prettyMs(msg.duration * 1000) }
+        : {}),
       interrupted: msg.status === MessageStatus.INTERRUPTED,
     };
   });
@@ -66,7 +78,7 @@ function ChatMessage({ msg }: { msg: Message }) {
     return <ErrorMessage message={msg.content} />;
   }
   if (msg.role === "user") {
-    return <UserMessage message={msg.content} />;
+    return <UserMessage message={msg.content} mode={msg.mode} />;
   }
 
   return (
@@ -83,6 +95,7 @@ function ChatMessage({ msg }: { msg: Message }) {
 
 function SessionChat({ session }: { session: SessionData }) {
   const [initialMessages] = useState(() => mapDbMessages(session.messages));
+  const { mode, model } = usePromptConfig();
 
   const { isTopLayer } = useKeyboardLayer();
 
@@ -98,16 +111,20 @@ function SessionChat({ session }: { session: SessionData }) {
   }, [abort]);
 
   useKeyboard((key) => {
-    if (key.name === "escape" && isTopLayer("base") && stream.status === "streaming") {
+    if (
+      key.name === "escape" &&
+      isTopLayer("base") &&
+      stream.status === "streaming"
+    ) {
       key.preventDefault();
       interrupt();
     }
-  })
+  });
 
   return (
     <SessionShell
       onSubmit={(text) => {
-        submit({ userText: text, mode: "BUILD", model: DEFAULT_CHAT_MODEL_ID });
+        submit({ userText: text, mode, model });
       }}
       loading={stream.status === "streaming"}
       interruptible={stream.status === "streaming"}

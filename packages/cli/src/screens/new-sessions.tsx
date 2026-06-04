@@ -1,4 +1,3 @@
-import { DEFAULT_CHAT_MODEL_ID } from "@archcode/shared";
 import { useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { z } from "zod";
@@ -8,9 +7,13 @@ import { getErrorMessage } from "../lib/http-errors";
 import { useTheme } from "../providers/theme";
 import { useToast } from "../providers/toast";
 import { UserMessage } from "../components/messages";
+import { Mode } from "@archcode/database/enums";
+
 
 const newSessionStateSchema = z.object({
   message: z.string(),
+  mode: z.enum(Mode),
+  model: z.string()
 });
 
 export function NewSessions() {
@@ -48,8 +51,8 @@ export function NewSessions() {
             initialMessage: {
               role: "USER",
               content: state.message,
-              mode: "BUILD",
-              model: DEFAULT_CHAT_MODEL_ID,
+              mode: state.mode,
+              model: state.model
             },
           },
         });
@@ -88,7 +91,7 @@ export function NewSessions() {
 
   return (
     <SessionShell onSubmit={() => {}} inputDisabled loading>
-      <UserMessage message={state.message} />
+      <UserMessage message={state.message} mode={state.mode} />
     </SessionShell>
   );
 }

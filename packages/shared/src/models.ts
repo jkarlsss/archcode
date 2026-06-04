@@ -3,7 +3,7 @@ export type ModelPricing = {
   outputUsdPerMillionTokens: number;
 };
 
-export type SupportProvider = "anthropic" | "openai" | "google";
+export type SupportProvider = "anthropic" | "openai" | "google" | "openrouter";
 
 type SupportChatModelDefinition = {
   id: string;
@@ -83,6 +83,14 @@ export const SUPPORT_CHAT_MODELS = [
     pricing: {
       inputUsdPerMillionTokens: 0.2,
       outputUsdPerMillionTokens: 1.25,
+    },
+  },
+  {
+    id: "nvidia/nemotron-3-ultra-550b-a55b:free",
+    provider: "openrouter",
+    pricing: {
+      inputUsdPerMillionTokens: 0.2,
+      outputUsdPerMillionTokens: 2.5,
     },
   }
 ] as const satisfies readonly SupportChatModelDefinition[];

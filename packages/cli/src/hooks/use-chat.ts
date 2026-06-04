@@ -9,7 +9,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { apiClient } from "../lib/api-client";
 import { getErrorMessage } from "../lib/http-errors";
 
-export type ClientMessagePart = { type: "text"; text: string };
+export type ClientToolCallPart = {
+  type: "tool-call";
+  id: string;
+  name: string;
+  args: Record<string, unknown>;
+  result?: string;
+  status: "calling" | "done";
+};
+
+export type ClientMessagePart =
+  | { type: "reasoning"; text: string }
+  | ClientToolCallPart
+  | { type: "text"; text: string };
 
 export type Message =
   | {
@@ -175,6 +187,40 @@ export function useChat(sessionId: string, initialMessage: Message[]) {
         }
 
         switch (event.type) {
+          case "reasoning-delta": {
+            const last = parts[parts.length - 1];
+
+            if (last && last.type === "reasoning") {
+              last.text += event.text;
+            } else {
+              parts.push({ type: "reasoning", text: event.text });
+            }
+            emitParts(activeStream.requestId, parts);
+            break;
+          }
+          case "tool-call":
+            parts.push({
+              type: "tool-call",
+              id: event.toolCallId,
+              name: event.toolName,
+              args: event.args,
+              status: "calling",
+            });
+            emitParts(activeStream.requestId, parts);
+            break;
+          case "tool-result": {
+            const toolCallPart = parts.find(
+              (part): part is ClientToolCallPart =>
+                part.type === "tool-call" && part.id === event.toolCallId,
+            );
+
+            if (toolCallPart) {
+              toolCallPart.result = event.result;
+              toolCallPart.status = "done";
+            }
+            emitParts(activeStream.requestId, parts);
+            break;
+          }
           case "text-delta": {
             const last = parts[parts.length - 1];
 
@@ -205,7 +251,7 @@ export function useChat(sessionId: string, initialMessage: Message[]) {
                 parts: [...parts],
               },
             ]);
-            
+
             // Clear stream state immediately to avoid duplicate rendering
             clearStream(activeStream.requestId);
             return;
@@ -267,9 +313,7 @@ export function useChat(sessionId: string, initialMessage: Message[]) {
     [clearStream, handleStream, isActiveRequest, updateMessages],
   );
 
-  const stopActiveStream = useCallback((
-    capturePartial: boolean
-  ) => {
+  const stopActiveStream = useCallback((capturePartial: boolean) => {
     const activeStream = activeStreamRef.current;
     if (!activeStream) return;
 
@@ -310,7 +354,6 @@ export function useChat(sessionId: string, initialMessage: Message[]) {
 
   const submit = useCallback(
     async ({ userText, mode, model }: SubmitParams) => {
-
       stopActiveStream(true);
 
       const userMessage: Message = {
