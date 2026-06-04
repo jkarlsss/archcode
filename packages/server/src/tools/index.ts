@@ -1,10 +1,10 @@
-import { createReadFileTool } from "./read-file";
-import { createListDirectoryTool } from "./list-directory";
-import { createWriteFileTool } from "./write-file";
-import { createEditFileTool } from "./edit-file";
-import { createGrepTool } from "./grep";
-import { createGlobTool } from "./glob";
-import { createBashTool } from "./bash";
+import { createReadFileTool } from "./read-file.js";
+import { createListDirectoryTool } from "./list-directory.js";
+import { createWriteFileTool } from "./write-file.js";
+import { createEditFileTool } from "./edit-file.js";
+import { createGrepTool } from "./grep.js";
+import { createGlobTool } from "./glob.js";
+import { createBashTool } from "./bash.js";
 import type { Mode } from "@archcode/database/enums";
 
 export function createTools(cwd: string, mode: Mode) {
