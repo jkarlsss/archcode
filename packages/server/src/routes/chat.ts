@@ -224,10 +224,10 @@ async function streamAIResponse(
       .map((p) => p.text)
       .join("");
 
-      const validatedParts: Prisma.InputJsonValue | undefined =
-        parts.length > 0 ? messagePartsSchema.parse(parts) : undefined;
+    const validatedParts: Prisma.InputJsonValue | undefined =
+      parts.length > 0 ? messagePartsSchema.parse(parts) : undefined;
 
-    const assestantMessage = await db.message.create({
+    const assistantMessage = await db.message.create({
       data: {
         sessionId,
         role: "ASSISTANT",
@@ -242,7 +242,7 @@ async function streamAIResponse(
 
     const doneEvent: ChatStreamEvent = {
       type: "done",
-      messageId: assestantMessage.id,
+      messageId: assistantMessage.id,
       durationMs: elapsed,
     };
     await stream.writeSSE({ event: "done", data: JSON.stringify(doneEvent) });

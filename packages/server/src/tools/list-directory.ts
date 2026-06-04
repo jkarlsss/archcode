@@ -12,12 +12,14 @@ export function createListDirectoryTool(cwd: string) {
         .string()
         .describe(
           "Relative path to the directory to list (defaults to project root)",
-        ),
+        )
+        .default("."),
     }),
     execute: async ({ path }) => {
       const resolvedPath = resolve(cwd, path);
+      const rel = relative(cwd, resolvedPath);
 
-      if (!resolvedPath.startsWith(cwd)) {
+      if (rel.startsWith("..")) {
         return {
           success: false,
           error: "Path must be within the project root",

@@ -70,7 +70,7 @@ const GOOGLE_PROVIDER_OPTIONS: Partial<Record<GoogleModelId, ProviderOptions>> =
     },
   };
 
-const OPENROUNTER_PROVIDER_OPTIONS: Partial<
+const OPENROUTER_PROVIDER_OPTIONS: Partial<
   Record<OpenRouterModelId, ProviderOptions>
 > = {
   "nvidia/nemotron-3-ultra-550b-a55b:free": {
@@ -119,7 +119,7 @@ function resolveOpenrouterModel(modelId: OpenRouterModelId): ResolvedModel {
     model: openrouter(modelId),
     provider: "openrouter",
     modelId,
-    providerOptions: OPENROUNTER_PROVIDER_OPTIONS[modelId],
+    providerOptions: OPENROUTER_PROVIDER_OPTIONS[modelId],
   };
 }
 

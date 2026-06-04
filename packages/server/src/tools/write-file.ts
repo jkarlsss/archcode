@@ -5,22 +5,22 @@ import { z } from "zod";
 
 export function createWriteFileTool(cwd: string) {
   return tool({
-    description: 
-    "Create or overwrite a file in a project. Creates parent directories if they don't exist.",
+    description:
+      "Create or overwrite a file in a project. Creates parent directories if they don't exist.",
     inputSchema: z.object({
       path: z.string().describe("Relative path to the file to write to"),
       content: z.string().describe("The content to write to the file"),
     }),
     execute: async ({ path, content }) => {
       const resolvedPath = resolve(cwd, path);
+      const rel = relative(cwd, resolvedPath);
 
-      if (!resolvedPath.startsWith(cwd)) {
+      if (rel.startsWith("..")) {
         return {
           success: false,
           error: "Path must be within the project root",
         };
       }
-
       try {
         await mkdir(dirname(resolvedPath), { recursive: true });
         await writeFile(resolvedPath, content, "utf-8");
@@ -35,6 +35,6 @@ export function createWriteFileTool(cwd: string) {
           error: `Failed to write file: ${(error as Error).message}`,
         };
       }
-    }
-    })
+    },
+  });
 }

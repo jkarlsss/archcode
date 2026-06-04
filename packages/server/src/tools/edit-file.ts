@@ -19,7 +19,14 @@ export function createEditFileTool(cwd: string) {
     }),
     execute: async ({ path, oldString, newString }) => {
       const resolvedPath = resolve(cwd, path);
+      const rel = relative(cwd, resolvedPath);
 
+      if (rel.startsWith("..")) {
+        return {
+          success: false,
+          error: "Path must be within the project root",
+        };
+      }
       try {
         const content = await readFile(resolvedPath, "utf-8");
 
