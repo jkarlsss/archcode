@@ -93,7 +93,7 @@ function findActiveMention(
     mentionEnd += 1;
   }
 
-  if (relativeCursor < mentionEnd || relativeCursor > mentionEnd) {
+  if (relativeCursor < mentionStart + 1 || relativeCursor > mentionEnd) {
     return null;
   }
 
@@ -626,6 +626,7 @@ export function InputBars({ onSubmit, disabled }: InputBarsProps) {
             keyBindings={TEXTAREA_KEY_BINDINGS}
             ref={textareaRef}
             onContentChange={handleTextareaContentChange}
+            onCursorChange={handleTextareaCursorChange}
             focused={
               !disabled &&
               (isTopLayer("base") ||

@@ -10,8 +10,8 @@ if (!process.env.CLERK_PUBLISHABLE_KEY) {
 
 const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
-  publishableKey: process.env.CLERK_PUBLISHABLE_KEY
-})
+  publishableKey: process.env.CLERK_PUBLISHABLE_KEY,
+});
 
 export async function authenticateOAuthRequest(request: Request) {
   const requestState = await clerkClient.authenticateRequest(request, {
@@ -23,9 +23,10 @@ export async function authenticateOAuthRequest(request: Request) {
   }
 
   const auth = requestState.toAuth();
-  if(auth.tokenType !== "oauth_token") {return null};
-
+  if (auth.tokenType !== "oauth_token") {
+    return null;
+  }
   return {
     userId: auth.userId,
-  }
+  };
 }
