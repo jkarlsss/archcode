@@ -5,6 +5,7 @@ import { zValidator } from "@hono/zod-validator";
 import * as Sentry from "@sentry/hono/node";
 import { Hono } from "hono";
 import { z } from "zod";
+import type { AuthenticatedEnv } from "../middleware/require-auth";
 
 const createSessionSchema = z.object({
   title: z.string(),
@@ -36,9 +37,12 @@ const createSessionValidator = zValidator(
   },
 );
 
-const app = new Hono()
+const app = new Hono<AuthenticatedEnv>()
   .get("/", async (c) => {
     const sessions = await db.session.findMany({
+      where: {
+        userId: c.get("userId"),
+      },
       orderBy: {
         createdAt: "desc",
       },
@@ -64,9 +68,11 @@ const app = new Hono()
     // })
 
     const id = c.req.param("id");
+    const userId = c.get("userId");
     const session = await db.session.findFirst({
       where: {
         id,
+        userId
       },
       include: {
         messages: {
@@ -79,14 +85,14 @@ const app = new Hono()
     if (!session) {
       Sentry.logger.warn("Session not found", {
         sessionId: id,
-        userId: "mock-user",
+        userId,
       });
       return c.json({ error: "Session not found" }, 404);
     }
 
     Sentry.logger.info("Load session", {
       sessionId: id,
-      userId: "mock-user",
+      userId,
     });
 
     return c.json(session);
@@ -99,12 +105,13 @@ const app = new Hono()
     // })
 
     try {
+      const userId = c.get("userId");
       const { initialMessage, ...data } = c.req.valid("json");
 
       const session = await db.session.create({
         data: {
           ...data,
-          userId: "mock-user",
+          userId,
           ...(initialMessage && {
             messages: {
               create: {

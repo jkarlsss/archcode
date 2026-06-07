@@ -15,6 +15,7 @@ import { z } from "zod";
 import { isSupportedChatModel, resolveChatModel } from "../lib/model.js";
 import { createTools } from "../tools/index.js";
 import { buildSystemPrompt } from "../system-prompt.js";
+import type { AuthenticatedEnv } from "../middleware/require-auth.js";
 
 const submitSchema = z.object({
   content: z.string(),
@@ -270,12 +271,13 @@ async function streamAIResponse(
   }
 }
 
-const app = new Hono()
+const app = new Hono<AuthenticatedEnv>()
   .post("/:sessionId/resume", async (c) => {
     const sessionId = c.req.param("sessionId");
+    const userId = c.get("userId");
 
     const session = await db.session.findUnique({
-      where: { id: sessionId },
+      where: { id: sessionId, userId },
       include: {
         messages: {
           orderBy: {
@@ -347,9 +349,10 @@ const app = new Hono()
   })
   .post("/:sessionId", submitValidator, async (c) => {
     const sessionId = c.req.param("sessionId");
+    const userId = c.get("userId");
 
     const session = await db.session.findUnique({
-      where: { id: sessionId },
+      where: { id: sessionId, userId },
       include: {
         messages: {
           orderBy: {

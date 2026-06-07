@@ -17,6 +17,7 @@
     "@ai-sdk/provider-utils": "^4.0.27",
     "@archcode/database": "workspace:*",
     "@archcode/shared": "workspace:*",
+    "@clerk/backend": "^3.5.0",
     "@hono/zod-validator": "^0.8.0",
     "@openrouter/ai-sdk-provider": "^2.9.0",
     "@sentry/hono": "^10.55.0",
