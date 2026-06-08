@@ -14,14 +14,15 @@ type UseCommandMenuReturn = {
 
 import { useKeyboard } from "@opentui/react";
 import React from "react";
+import { useKeyboardLayer } from "../../providers/keyboard-layer";
 import { getFilteredCommands } from "./filter-commands";
 import type { Command } from "./types";
-import { useKeyboardLayer } from "../../providers/keyboard-layer";
 
 export function useCommandMenu(): UseCommandMenuReturn {
   const [textValue, setTextValue] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showCommandMenu, setShowCommandMenu] = useState(false);
+  const [isCommandLayerPushed, setIsCommandLayerPushed] = useState(false);
 
   const scrollRef = React.useRef<ScrollBoxRenderable | null>(null);
   const { push, pop, isTopLayer } = useKeyboardLayer();
@@ -36,6 +37,7 @@ export function useCommandMenu(): UseCommandMenuReturn {
 
   const close = () => {
     setShowCommandMenu(false);
+    setIsCommandLayerPushed(false);
     pop("command");
   };
 
@@ -51,11 +53,16 @@ export function useCommandMenu(): UseCommandMenuReturn {
     const prefix = text.startsWith("/") ? text.slice(1) : null;
 
     if (prefix !== null && !prefix.includes(" ")) {
-      setShowCommandMenu(true);
-      push("command", () => {
-        close();
-        return true;
-      });
+      if (!isCommandLayerPushed) {
+        setShowCommandMenu(true);
+        setIsCommandLayerPushed(true);
+        push("command", () => {
+          close();
+          return true;
+        });
+      } else {
+        setShowCommandMenu(true);
+      }
     } else {
       close();
     }

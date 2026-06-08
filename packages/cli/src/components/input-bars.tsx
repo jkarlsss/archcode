@@ -596,7 +596,7 @@ export function InputBars({ onSubmit, disabled }: InputBarsProps) {
               backgroundColor={colors.surface}
             >
               <CommandMenu
-                query=""
+                query={commandQuery}
                 selectedIndex={selectedIndex}
                 scrollRef={scrollRef}
                 onSelect={setSelectedIndex}

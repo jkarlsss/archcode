@@ -8,8 +8,8 @@ import {
   type SupportChatModelId,
   type SupportProvider,
 } from "@archcode/shared";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import type { LanguageModel } from "ai";
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 
 type AnthropicModelId = Extract<SupportChatModel, { mode: "anthropic" }>["id"];
 type OpenaiModelId = Extract<SupportChatModel, { mode: "openai" }>["id"];
@@ -75,9 +75,9 @@ const OPENROUTER_PROVIDER_OPTIONS: Partial<
 > = {
   "nvidia/nemotron-3-ultra-550b-a55b:free": {
     openrouter: {
-      reasoning: {
-        max_tokens: 10,
-      },
+      // reasoning: {
+      //   enabled: false,
+      // },
     },
   },
 };
@@ -113,10 +113,13 @@ function resolveGoogleModel(modelId: GoogleModelId): ResolvedModel {
   };
 }
 
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
+
 function resolveOpenrouterModel(modelId: OpenRouterModelId): ResolvedModel {
-  const openrouter = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY });
   return {
-    model: openrouter(modelId),
+    model: openrouter.chat(modelId),
     provider: "openrouter",
     modelId,
     providerOptions: OPENROUTER_PROVIDER_OPTIONS[modelId],

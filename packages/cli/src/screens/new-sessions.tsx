@@ -21,7 +21,6 @@ export function NewSessions() {
   const location = useLocation();
   const toast = useToast();
   const hasStartedRef = useRef(false);
-  const { colors } = useTheme();
 
   const state = useMemo(() => {
     const parsed = newSessionStateSchema.safeParse(location.state);

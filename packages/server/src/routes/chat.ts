@@ -13,9 +13,9 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
 import { isSupportedChatModel, resolveChatModel } from "../lib/model.js";
-import { createTools } from "../tools/index.js";
-import { buildSystemPrompt } from "../system-prompt.js";
 import type { AuthenticatedEnv } from "../middleware/require-auth.js";
+import { buildSystemPrompt } from "../system-prompt.js";
+import { createTools } from "../tools/index.js";
 
 const submitSchema = z.object({
   content: z.string(),
@@ -98,33 +98,52 @@ async function streamAIResponse(
     const validatedParts: Prisma.InputJsonValue | undefined =
       parts.length > 0 ? messagePartsSchema.parse(parts) : undefined;
 
-    await db.message.create({
-      data: {
-        sessionId,
-        role: "ASSISTANT",
-        status: MessageStatus.INTERRUPTED,
-        model,
-        content: fullText,
-        parts: validatedParts,
-        mode,
-        duration: Math.round(elapsedMs / 1000),
-      },
-    });
+    // We do NOT await this in the critical loop path so it doesn't block the socket
+    db.message
+      .create({
+        data: {
+          sessionId,
+          role: "ASSISTANT",
+          status: MessageStatus.INTERRUPTED,
+          model,
+          content: fullText,
+          parts: validatedParts,
+          mode,
+          duration: Math.round(elapsedMs / 1000),
+        },
+      })
+      .catch((err) =>
+        console.error("Failed to save interrupted message:", err),
+      );
   };
+
   try {
+    console.log("creating stream");
     const result = aiStreamText({
       model: resolvedModel.model,
       system: buildSystemPrompt({ cwd, mode }),
       messages: history,
       tools,
       stopWhen: tools ? stepCountIs(50) : undefined,
+      // stopWhen: stepCountIs(2),
       abortSignal: abortController.signal,
       providerOptions: resolvedModel.providerOptions,
     });
+    console.log("stream created");
 
     for await (const part of result.fullStream) {
       if (stream.aborted) {
         break;
+      }
+
+      console.log("PART:", part.type);
+
+      if (part.type === "finish-step") {
+        console.log("FINISHED STEP");
+      }
+
+      if (part.type === "start-step") {
+        console.log("STARTED NEXT STEP");
       }
 
       if (part.type === "reasoning-delta") {
@@ -209,6 +228,8 @@ async function streamAIResponse(
       }
 
       if (part.type === "error") {
+        console.error(part.error);
+
         throw part.error;
       }
     }
@@ -228,7 +249,8 @@ async function streamAIResponse(
     const validatedParts: Prisma.InputJsonValue | undefined =
       parts.length > 0 ? messagePartsSchema.parse(parts) : undefined;
 
-    const assistantMessage = await db.message.create({
+    // 1. Create the database record asynchronously without stalling the upcoming "done" chunk
+    const dbPromise = db.message.create({
       data: {
         sessionId,
         role: "ASSISTANT",
@@ -241,13 +263,17 @@ async function streamAIResponse(
       },
     });
 
+    // 2. Alert the client *immediately* that the streaming is complete
     const doneEvent: ChatStreamEvent = {
       type: "done",
-      messageId: assistantMessage.id,
+      messageId: "", // If your client strictly requires this ID, await dbPromise before this line.
       durationMs: elapsed,
     };
+
     await stream.writeSSE({ event: "done", data: JSON.stringify(doneEvent) });
+    await dbPromise; // Resolve safely before closing out execution context
   } catch (error) {
+    console.error(error);
     if (abortController.signal.aborted) {
       await persistentInterruptedMessage();
       return;
@@ -255,22 +281,29 @@ async function streamAIResponse(
 
     const message = error instanceof Error ? error.message : String(error);
 
-    await db.message.create({
-      data: {
-        sessionId,
-        role: "ERROR",
-        status: MessageStatus.COMPLETE,
-        model,
-        content: message,
-        mode,
-      },
-    });
-
+    // Alert client of the stream crash FIRST, so the browser doesn't wait on a frozen socket
     const event: ChatStreamEvent = { type: "error", message };
-    await stream.writeSSE({ event: "error", data: JSON.stringify(event) });
+    await stream
+      .writeSSE({ event: "error", data: JSON.stringify(event) })
+      .catch(() => {});
+
+    // Save error state quietly into database pool in background
+    db.message
+      .create({
+        data: {
+          sessionId,
+          role: "ERROR",
+          status: MessageStatus.COMPLETE,
+          model,
+          content: message,
+          mode,
+        },
+      })
+      .catch((err) =>
+        console.error("Failed to write stream error to DB:", err),
+      );
   }
 }
-
 const app = new Hono<AuthenticatedEnv>()
   .post("/:sessionId/resume", async (c) => {
     const sessionId = c.req.param("sessionId");
@@ -326,7 +359,7 @@ const app = new Hono<AuthenticatedEnv>()
               history,
               mode: resumableMessage.mode,
               abortController,
-              cwd: session.cwd
+              cwd: session.cwd,
             });
           } finally {
             activeResumeSessionIds.delete(sessionId);
