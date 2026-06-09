@@ -115,71 +115,70 @@ const app = new Hono<AuthenticatedEnv>().post(
       } else {
         mergedMessages.push(incomingMessage);
       }
+    }
 
-      const nextMessages = await validateUIMessages<ArchcodeUIMessage>({
-        messages: mergedMessages,
-        tools,
-      });
+    const nextMessages = await validateUIMessages<ArchcodeUIMessage>({
+      messages: mergedMessages,
+      tools,
+    });
 
-      const modelMessages = await convertToModelMessages(nextMessages, {
-        tools,
-      });
-      let completeUsage: LanguageModelUsage | null = null;
+    const modelMessages = await convertToModelMessages(nextMessages, {
+      tools,
+    });
+    let completeUsage: LanguageModelUsage | null = null;
 
-      const result = streamText({
-        model: resolvedModel.model,
-        system: buildSystemPrompt({ mode }),
-        messages: modelMessages,
-        tools,
-        providerOptions: resolvedModel.providerOptions,
-        abortSignal: c.req.raw.signal,
-        onFinish(event) {
-          completeUsage = event.usage;
-        },
-      });
+    const result = streamText({
+      model: resolvedModel.model,
+      system: buildSystemPrompt({ mode }),
+      messages: modelMessages,
+      tools,
+      providerOptions: resolvedModel.providerOptions,
+      abortSignal: c.req.raw.signal,
+      onFinish(event) {
+        completeUsage = event.usage;
+      },
+    });
 
-      return result.toUIMessageStreamResponse<ArchcodeUIMessage>({
-        originalMessages: nextMessages,
-        messageMetadata({ part }) {
-          if (part.type === "start") {
-            return {
-              mode,
-              model,
-            };
-          }
-
-          if (part.type !== "finish") return undefined;
-
+    return result.toUIMessageStreamResponse<ArchcodeUIMessage>({
+      originalMessages: nextMessages,
+      messageMetadata({ part }) {
+        if (part.type === "start") {
           return {
             mode,
             model,
-            durationMs: Date.now() - startTime,
-            ...(completeUsage ? { usage: completeUsage } : {}),
           };
-        },
-        async onFinish(event) {
-          if (event.isAborted) return;
-
-          if (hasPendingToolCalls(event.responseMessage)) return;
-
-          await db.session.update({
-            where: {
-              id,
-              userId,
-            },
-            data: {
-              messages: event.messages as unknown as Prisma.InputJsonValue,
-            },
-          });
-
-          if (!completeUsage) return;
-
-        },
-        onError(error) {
-          return error instanceof Error ? error.message : String(error);
         }
-      });
-    }
+
+        if (part.type !== "finish") return undefined;
+
+        return {
+          mode,
+          model,
+          durationMs: Date.now() - startTime,
+          ...(completeUsage ? { usage: completeUsage } : {}),
+        };
+      },
+      async onFinish(event) {
+        if (event.isAborted) return;
+
+        if (hasPendingToolCalls(event.responseMessage)) return;
+
+        await db.session.update({
+          where: {
+            id,
+            userId,
+          },
+          data: {
+            messages: event.messages as unknown as Prisma.InputJsonValue,
+          },
+        });
+
+        if (!completeUsage) return;
+      },
+      onError(error) {
+        return error instanceof Error ? error.message : String(error);
+      },
+    });
   },
 );
 

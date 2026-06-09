@@ -12,7 +12,7 @@ export type ModeType = (typeof Mode)[keyof typeof Mode];
 
 export const toolInputSchemas = {
   readFile: z.object({
-    path: z.string().describe("Relative path to the file to read to"),
+    path: z.string().describe("Relative path to the file to read"),
   }),
   listDirectory: z.object({
     path: z
@@ -69,7 +69,7 @@ export const toolInputSchemas = {
       .string()
       .optional()
       .describe("The description of the command"),
-    timeout: z.number().optional().describe("The timeout in miliseconds"),
+    timeout: z.number().optional().describe("The timeout in milliseconds"),
   }),
 } as const;
 
@@ -81,13 +81,15 @@ export const readOnlyToolContracts = {
   listDirectory: tool({
     description: "List entries in the current project directory",
     inputSchema: toolInputSchemas.listDirectory,
-  }), 
+  }),
   glob: tool({
-    description: "Find files matching a glob pattern under the current project directory",
+    description:
+      "Find files matching a glob pattern under the current project directory",
     inputSchema: toolInputSchemas.glob,
   }),
   grep: tool({
-    description: "Search file contents with a regular expression under the current project directory",
+    description:
+      "Search file contents with a regular expression under the current project directory",
     inputSchema: toolInputSchemas.grep,
   }),
 } as const;
@@ -99,7 +101,8 @@ export const buildToolContracts = {
     inputSchema: toolInputSchemas.writeFile,
   }),
   editFile: tool({
-    description: "Replace exact text in a file in the current project directory",
+    description:
+      "Replace exact text in a file in the current project directory",
     inputSchema: toolInputSchemas.editFile,
   }),
   bash: tool({
@@ -110,6 +113,6 @@ export const buildToolContracts = {
 
 export type ToolContracts = typeof buildToolContracts;
 
-export function getToolContracts (mode: ModeType) {
+export function getToolContracts(mode: ModeType) {
   return mode === Mode.BUILD ? buildToolContracts : readOnlyToolContracts;
 }

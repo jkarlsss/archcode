@@ -15,7 +15,7 @@
     }
   },
   "scripts": {
-    "build": "bun build src/index.ts src/client.ts src/enums.ts --outdir dist --target node --format esm",
+    "build": "bun build src/index.ts src/client.ts --outdir dist --target node --format esm",
     "db:generate": "bunx prisma generate",
     "db:push": "bunx prisma db push",
     "db:studio": "bunx prisma studio"
