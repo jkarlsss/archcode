@@ -133,7 +133,6 @@ const app = new Hono<AuthenticatedEnv>().post(
       messages: modelMessages,
       tools,
       providerOptions: resolvedModel.providerOptions,
-      abortSignal: c.req.raw.signal,
       onFinish(event) {
         completeUsage = event.usage;
       },
