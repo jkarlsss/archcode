@@ -1,399 +1,115 @@
-import type { Mode } from "@archcode/database/enums";
-import {
-  chatStreamEventSchema,
-  type SupportChatModelId,
+import { useChat as useAiChat } from "@ai-sdk/react";
+import type {
+  ModeType,
+  SupportChatModelId,
+  ToolContracts,
 } from "@archcode/shared";
-import { EventSourceParserStream } from "eventsource-parser/stream";
-import type { ClientResponse } from "hono/client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithToolCalls,
+  type InferUITools,
+  type LanguageModelUsage,
+  type UIMessage,
+} from "ai";
+import { useMemo } from "react";
 import { apiClient } from "../lib/api-client";
-import { getErrorMessage } from "../lib/http-errors";
+import { getAuth } from "../lib/auth";
+import { executeLocalTool } from "../lib/local-tools";
 
-export type ClientToolCallPart = {
-  type: "tool-call";
-  id: string;
-  name: string;
-  args: Record<string, unknown>;
-  result?: string;
-  status: "calling" | "done";
+export type ChatMessageMetadata = {
+  mode?: ModeType;
+  model?: SupportChatModelId | string;
+  durationMs?: number;
+  usage?: LanguageModelUsage;
 };
 
-export type ClientMessagePart =
-  | { type: "reasoning"; text: string }
-  | ClientToolCallPart
-  | { type: "text"; text: string };
-
-export type Message =
-  | {
-      id: string;
-      role: "user";
-      content: string;
-      mode: Mode;
-      model: SupportChatModelId;
-    }
-  | {
-      id: string;
-      role: "assistant";
-      content: string;
-      mode: Mode;
-      model: SupportChatModelId;
-      parts: ClientMessagePart[];
-      duration?: string;
-      interrupted?: boolean;
-    }
-  | { id: string; role: "error"; content: string };
-
-type StreamState =
-  | { status: "idle" }
-  | {
-      status: "streaming";
-      parts: ClientMessagePart[];
-      mode: Mode;
-      model: SupportChatModelId;
-    };
-
-type ActiveStream = {
-  requestId: string;
-  controller: AbortController;
-  mode: Mode;
-  model: SupportChatModelId;
-  parts: ClientMessagePart[];
-  interruptedCaptured: boolean;
+type ChatTools = {
+  [Name in keyof InferUITools<ToolContracts>]: {
+    input: InferUITools<ToolContracts>[Name]["input"];
+    output: unknown;
+  };
 };
 
-type SubmitParams = {
-  userText: string;
-  mode: Mode;
-  model: SupportChatModelId;
-};
+export type Message = UIMessage<ChatMessageMetadata, never, ChatTools>;
 
-type RunStreamParams = {
-  mode: Mode;
-  model: SupportChatModelId;
-  request: (controller: AbortController) => Promise<ClientResponse<unknown>>;
-};
+export function useChat(sessionId: string, initialMessages: Message[]) {
+  const transport = useMemo(() => {
+    return new DefaultChatTransport<Message>({
+      api: apiClient.chat.$url().toString(),
+      async headers() {
+        const auth = await getAuth();
+        return auth ? { Authorization: `Bearer ${auth.token}` } : new Headers();
+      },
+      prepareSendMessagesRequest({ messages }) {
+        const message = messages[messages.length - 1];
 
-export function useChat(sessionId: string, initialMessage: Message[]) {
-  const [messages, setMessages] = useState<Message[]>(initialMessage);
-  const [stream, setStream] = useState<StreamState>({
-    status: "idle",
+        if (!message) throw new Error("No message");
+
+        const metadata = messages.findLast(
+          (m) => m.metadata && m.metadata.mode,
+        )?.metadata;
+        const previousMessages = messages[messages.length - 2];
+        const requestMessages =
+          message.role === "assistant" && previousMessages?.role === "user"
+            ? [previousMessages, message]
+            : [message];
+
+        return {
+          body: {
+            id: sessionId,
+            messages: requestMessages,
+            mode: message.metadata?.mode ?? metadata?.mode,
+            model: message.metadata?.model ?? metadata?.model,
+          },
+        };
+      },
+    });
+  }, [sessionId]);
+
+  const chat = useAiChat<Message>({
+    id: sessionId,
+    messages: initialMessages,
+    transport,
+    onToolCall({ toolCall }) {
+      const mode = chat.messages.at(-1)?.metadata?.mode ?? "BUILD";
+
+      void executeLocalTool(toolCall.toolName, toolCall.input, mode)
+        .then((output) =>
+          chat.addToolOutput({
+            tool: toolCall.toolName as keyof ChatTools,
+            toolCallId: toolCall.toolCallId,
+            output,
+          }),
+        )
+        .catch((error) => {
+          chat.addToolOutput({
+            tool: toolCall.toolName as keyof ChatTools,
+            toolCallId: toolCall.toolCallId,
+            state: "output-error",
+            errorText: error instanceof Error ? error.message : String(error),
+          });
+        });
+    },
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
   });
 
-  const activeStreamRef = useRef<ActiveStream | null>(null);
-
-  const updateMessages = useCallback(
-    (updater: (message: Message[]) => Message[]) => {
-      setMessages((prev) => updater(prev));
-    },
-    [],
-  );
-
-  const isActiveRequest = useCallback((requestId: string) => {
-    return activeStreamRef.current?.requestId === requestId;
-  }, []);
-
-  const emitParts = useCallback(
-    (requestId: string, parts: ClientMessagePart[]) => {
-      if (!isActiveRequest(requestId)) return;
-
-      const snapshop = [...parts];
-      const activeStream = activeStreamRef.current;
-
-      if (!activeStream) return;
-
-      activeStream.parts = snapshop;
-      setStream({
-        status: "streaming",
-        mode: activeStream.mode,
-        model: activeStream.model,
-        parts: snapshop,
-      });
-    },
-    [isActiveRequest],
-  );
-
-  const captureInterruptedMessage = useCallback(
-    (activeStream: ActiveStream) => {
-      if (activeStream.interruptedCaptured || activeStream.parts.length === 0)
-        return;
-
-      activeStream.interruptedCaptured = true;
-      const parts = [...activeStream.parts];
-      const fullText = parts
-        .filter((part) => part.type === "text")
-        .map((part) => part.text)
-        .join("");
-
-      updateMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: fullText,
-          mode: activeStream.mode,
-          model: activeStream.model,
-          parts,
-          interrupted: true,
+  return {
+    messages: chat.messages,
+    status: chat.status,
+    error: chat.error,
+    submit: (params: {
+      userText: string;
+      mode: ModeType;
+      model: SupportChatModelId;
+    }) =>
+      chat.sendMessage({
+        text: params.userText,
+        metadata: {
+          mode: params.mode,
+          model: params.model,
         },
-      ]);
-    },
-    [updateMessages],
-  );
-
-  const clearStream = useCallback(
-    (requestId: string) => {
-      if (!isActiveRequest(requestId)) return;
-
-      activeStreamRef.current = null;
-      setStream({ status: "idle" });
-    },
-    [isActiveRequest],
-  );
-
-  const handleStream = useCallback(
-    async (response: ClientResponse<unknown>, activeStream: ActiveStream) => {
-      if (!isActiveRequest(activeStream.requestId)) return;
-
-      if (!response.ok) {
-        const message = await getErrorMessage(response);
-        updateMessages((prev) => [
-          ...prev,
-          { id: crypto.randomUUID(), role: "error", content: message },
-        ]);
-        return;
-      }
-
-      const parts: ClientMessagePart[] = [];
-
-      const stream = response
-        .body!.pipeThrough(new TextDecoderStream())
-        .pipeThrough(new EventSourceParserStream());
-
-      for await (const { data } of stream) {
-        if (!isActiveRequest(activeStream.requestId)) return;
-
-        let event;
-
-        try {
-          event = chatStreamEventSchema.parse(JSON.parse(data));
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : "Failed to parse event";
-          updateMessages((prev) => [
-            ...prev,
-            { id: crypto.randomUUID(), role: "error", content: message },
-          ]);
-          break;
-        }
-
-        switch (event.type) {
-          case "reasoning-delta": {
-            const last = parts[parts.length - 1];
-
-            if (last && last.type === "reasoning") {
-              last.text += event.text;
-            } else {
-              parts.push({ type: "reasoning", text: event.text });
-            }
-            emitParts(activeStream.requestId, parts);
-            break;
-          }
-          case "tool-call":
-            parts.push({
-              type: "tool-call",
-              id: event.toolCallId,
-              name: event.toolName,
-              args: event.args,
-              status: "calling",
-            });
-            emitParts(activeStream.requestId, parts);
-            break;
-          case "tool-result": {
-            const toolCallPart = parts.find(
-              (part): part is ClientToolCallPart =>
-                part.type === "tool-call" && part.id === event.toolCallId,
-            );
-
-            if (toolCallPart) {
-              toolCallPart.result = event.result;
-              toolCallPart.status = "done";
-            }
-            emitParts(activeStream.requestId, parts);
-            break;
-          }
-          case "text-delta": {
-            const last = parts[parts.length - 1];
-
-            if (last && last.type === "text") {
-              last.text += event.text;
-            } else {
-              parts.push({ type: "text", text: event.text });
-            }
-            emitParts(activeStream.requestId, parts);
-            break;
-          }
-          case "done": {
-            if (!isActiveRequest(activeStream.requestId)) return;
-
-            const fullText = parts
-              .filter((part) => part.type === "text")
-              .map((part) => part.text)
-              .join("");
-
-            updateMessages((prev) => [
-              ...prev,
-              {
-                id: event.messageId,
-                role: "assistant",
-                content: fullText,
-                mode: activeStream.mode,
-                model: activeStream.model,
-                parts: [...parts],
-              },
-            ]);
-
-            // Clear stream state immediately to avoid duplicate rendering
-            clearStream(activeStream.requestId);
-            return;
-          }
-          case "error": {
-            updateMessages((prev) => [
-              ...prev,
-              {
-                id: crypto.randomUUID(),
-                role: "error",
-                content: event.message,
-              },
-            ]);
-            break;
-          }
-        }
-      }
-    },
-    [emitParts, isActiveRequest, updateMessages],
-  );
-
-  const runStream = useCallback(
-    async ({ mode, model, request }: RunStreamParams) => {
-      const controller = new AbortController();
-      const requestId = crypto.randomUUID();
-
-      const activeStream: ActiveStream = {
-        requestId,
-        mode,
-        model,
-        parts: [],
-        controller,
-        interruptedCaptured: false,
-      };
-
-      activeStreamRef.current = activeStream;
-      setStream({ status: "streaming", mode, model, parts: [] });
-
-      try {
-        const clientResponse = await request(controller);
-
-        await handleStream(clientResponse, activeStream);
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
-          return;
-        }
-
-        if (!isActiveRequest(requestId)) return;
-
-        const msg = error instanceof Error ? error.message : String(error);
-        updateMessages((prev) => [
-          ...prev,
-          { id: crypto.randomUUID(), role: "error", content: msg },
-        ]);
-      } finally {
-        clearStream(requestId);
-      }
-    },
-    [clearStream, handleStream, isActiveRequest, updateMessages],
-  );
-
-  const stopActiveStream = useCallback((capturePartial: boolean) => {
-    const activeStream = activeStreamRef.current;
-    if (!activeStream) return;
-
-    if (capturePartial) {
-      captureInterruptedMessage(activeStream);
-    }
-
-    activeStreamRef.current = null;
-    setStream({ status: "idle" });
-    activeStream.controller.abort();
-  }, []);
-
-  const resume = useCallback(
-    async ({ mode, model }: Omit<SubmitParams, "userText">) => {
-      await runStream({
-        mode,
-        model,
-        request: async (controller) => {
-          return apiClient.chat[":sessionId"].resume.$post(
-            { param: { sessionId } },
-            { init: { signal: controller.signal } },
-          );
-        },
-      });
-    },
-    [runStream, sessionId],
-  );
-
-  const hasAutoResumeRef = useRef(false);
-  useEffect(() => {
-    if (hasAutoResumeRef.current) return;
-    const last = initialMessage[initialMessage.length - 1];
-    if (!last || last.role !== "user") return;
-
-    hasAutoResumeRef.current = true;
-    resume({ mode: last.mode, model: last.model });
-  }, [resume, initialMessage]);
-
-  const submit = useCallback(
-    async ({ userText, mode, model }: SubmitParams) => {
-      stopActiveStream(true);
-
-      const userMessage: Message = {
-        id: crypto.randomUUID(),
-        role: "user",
-        content: userText,
-        mode,
-        model,
-      };
-      updateMessages((prev) => [...prev, userMessage]);
-      await runStream({
-        mode,
-        model,
-        request: async (controller) => {
-          return apiClient.chat[":sessionId"].$post(
-            {
-              param: { sessionId },
-              json: {
-                content: userText,
-                mode,
-                model,
-              },
-            },
-            {
-              init: { signal: controller.signal },
-            },
-          );
-        },
-      });
-    },
-    [runStream, sessionId, updateMessages, stopActiveStream],
-  );
-
-  const abort = useCallback(() => {
-    stopActiveStream(false);
-  }, [stopActiveStream]);
-
-  const interrupt = useCallback(() => {
-    stopActiveStream(true);
-  }, [stopActiveStream]);
-
-  return { messages, stream, submit, abort, interrupt };
-}
+      }),
+    abort: chat.stop,
+    interrupt: chat.stop,
+  };
+};

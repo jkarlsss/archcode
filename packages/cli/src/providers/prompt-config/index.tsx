@@ -1,11 +1,10 @@
-import { Mode } from "@archcode/database/enums";
-import { DEFAULT_CHAT_MODEL_ID, type SupportChatModelId } from "@archcode/shared";
+import { DEFAULT_CHAT_MODEL_ID, Mode, type ModeType, type SupportChatModelId } from "@archcode/shared";
 import { createContext, useCallback, useContext, useState } from "react";
 
 type PromptConfigContextValue = {
-  mode: Mode;
+  mode: ModeType;
   toggleMode: () => void;
-  setMode: (mode: Mode) => void;
+  setMode: (mode: ModeType) => void;
   model: SupportChatModelId;
   setModel: (model: SupportChatModelId) => void;
 }
@@ -25,7 +24,7 @@ type PromptConfigProviderProps = {
 };
 
 export function PromptConfigProvider({ children }: PromptConfigProviderProps) {
-  const [mode, setMode] = useState<Mode>(Mode.BUILD);
+  const [mode, setMode] = useState<ModeType>(Mode.BUILD);
   const [model, setModel] = useState<SupportChatModelId>(DEFAULT_CHAT_MODEL_ID);
 
   const toggleMode = useCallback(() => {

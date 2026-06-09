@@ -7,12 +7,12 @@ import { getErrorMessage } from "../lib/http-errors";
 import { useTheme } from "../providers/theme";
 import { useToast } from "../providers/toast";
 import { UserMessage } from "../components/messages";
-import { Mode } from "@archcode/database/enums";
+import { Mode, modeSchema } from "@archcode/shared";
 
 
 const newSessionStateSchema = z.object({
   message: z.string(),
-  mode: z.enum(Mode),
+  mode: modeSchema,
   model: z.string()
 });
 
@@ -46,13 +46,6 @@ export function NewSessions() {
         const res = await apiClient.sessions.$post({
           json: {
             title: state.message.slice(0, 100),
-            cwd: process.cwd(),
-            initialMessage: {
-              role: "USER",
-              content: state.message,
-              mode: state.mode,
-              model: state.model
-            },
           },
         });
 
@@ -65,7 +58,7 @@ export function NewSessions() {
         const session = await res.json();
         navigate(`/sessions/${session.id}`, {
           replace: true,
-          state: { session },
+          state: { session, initialPrompt: state },
         });
       } catch (error) {
         if (ignore) return;

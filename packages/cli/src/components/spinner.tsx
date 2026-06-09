@@ -1,11 +1,11 @@
 import "opentui-spinner/react";
 import { useEffect, useState } from "react";
 import { useTheme } from "../providers/theme";
-import { Mode } from "@archcode/database/enums";
+import { Mode, type ModeType } from "@archcode/shared";
 
 type Props = {
   message?: string;
-  mode?: Mode;
+  mode?: ModeType;
 };
 
 const spinnerMessages = [

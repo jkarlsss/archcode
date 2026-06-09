@@ -1,5 +1,4 @@
-import { Mode } from "@archcode/database/enums";
-import type { SupportChatModelId } from "@archcode/shared";
+import { Mode, type ModeType, type SupportChatModelId } from "@archcode/shared";
 import { useCallback } from "react";
 import { useDialog } from "../../providers/dialog";
 import { DialogSearchList } from "../dialog-search-list";
@@ -9,7 +8,7 @@ type ModelsDialogContentProps = {
   onSelectModel: (model: SupportChatModelId) => void;
 };
 
-function getModelLabel(mode: Mode) {
+function getModelLabel(mode: ModeType) {
   return mode === Mode.PLAN ? "Plan" : "Build";
 }
 

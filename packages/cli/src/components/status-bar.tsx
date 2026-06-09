@@ -1,7 +1,7 @@
 import { TextAttributes } from "@opentui/core";
 import { useTheme } from "../providers/theme";
 import { usePromptConfig } from "../providers/prompt-config";
-import { Mode } from "@archcode/database";
+import { Mode } from "@archcode/shared";
 
 export function StatusBar() {
   const { colors } = useTheme();
