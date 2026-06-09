@@ -12,15 +12,10 @@
       "types": "./src/client.ts",
       "bun": "./src/client.ts",
       "default": "./dist/client.js"
-    },
-    "./enums": {
-      "types": "./src/enums.ts",
-      "bun": "./src/enums.ts",
-      "default": "./dist/enums.js"
     }
   },
   "scripts": {
-    "build": "bun build src/index.ts src/client.ts src/enums.ts --outdir dist --target node --format esm",
+    "build": "bun build src/index.ts src/client.ts --outdir dist --target node --format esm",
     "db:generate": "bunx prisma generate",
     "db:push": "bunx prisma db push",
     "db:studio": "bunx prisma studio"

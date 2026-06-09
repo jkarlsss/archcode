@@ -1,4 +1,3 @@
-import { Mode } from "@archcode/database";
 import {
   ScrollBoxRenderable,
   TextareaRenderable,
@@ -26,6 +25,7 @@ import { CommandMenu } from "./command-menu";
 import type { Command } from "./command-menu/types";
 import { useCommandMenu } from "./command-menu/use-command-menu";
 import { StatusBar } from "./status-bar";
+import { Mode } from "@archcode/shared";
 
 const MAX_VISIBLE_MENTIONS = 8;
 const CURRENT_DIRECTORY = process.cwd();

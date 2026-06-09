@@ -1,5 +1,4 @@
 import { db } from "@archcode/database/client";
-import { MessageStatus, Mode, Role } from "@archcode/database/enums";
 import { findSupportChatModel } from "@archcode/shared";
 import { zValidator } from "@hono/zod-validator";
 import * as Sentry from "@sentry/hono/node";
@@ -9,17 +8,6 @@ import type { AuthenticatedEnv } from "../middleware/require-auth";
 
 const createSessionSchema = z.object({
   title: z.string(),
-  cwd: z.string().optional(),
-  initialMessage: z
-    .object({
-      role: z.enum(Role),
-      content: z.string(),
-      mode: z.enum(Mode),
-      model: z
-        .string()
-        .refine((id) => !!findSupportChatModel(id), "Unsupported model"),
-    })
-    .optional(),
 });
 
 const createSessionValidator = zValidator(
@@ -74,13 +62,6 @@ const app = new Hono<AuthenticatedEnv>()
         id,
         userId
       },
-      include: {
-        messages: {
-          orderBy: {
-            createdAt: "asc",
-          },
-        },
-      },
     });
     if (!session) {
       Sentry.logger.warn("Session not found", {
@@ -106,24 +87,13 @@ const app = new Hono<AuthenticatedEnv>()
 
     try {
       const userId = c.get("userId");
-      const { initialMessage, ...data } = c.req.valid("json");
+      const data = c.req.valid("json");
 
       const session = await db.session.create({
         data: {
           ...data,
           userId,
-          ...(initialMessage && {
-            messages: {
-              create: {
-                ...initialMessage,
-                status: MessageStatus.COMPLETE,
-              },
-            },
-          }),
-        },
-        include: {
-          messages: true,
-        },
+        }
       });
 
       Sentry.logger.info("Create session", {

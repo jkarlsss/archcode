@@ -1,11 +1,10 @@
-import type { Mode } from "@archcode/database/enums";
+import type { ModeType } from "@archcode/shared";
 
 type SystemPromptParams = {
-  cwd: string | null;
-  mode: Mode;
+  mode: ModeType;
 };
 
-export function buildSystemPrompt({ cwd, mode }: SystemPromptParams) {
+export function buildSystemPrompt({ mode }: SystemPromptParams) {
   const parts: string[] = [];
 
   parts.push(`You are an expert software engineer working as a coding assistant inside a terminal application.
@@ -13,10 +12,6 @@ export function buildSystemPrompt({ cwd, mode }: SystemPromptParams) {
     The application has two modes the user can switch between:
     - **PLAN** - Read-only analysis and planning. No file modifications.
     - **BUILD** - Full implementation and read and write tools.`);
-
-  if (cwd) {
-    parts.push(`The user is currently in the directory: ${cwd}`);
-  }
 
   if (mode === "PLAN") {
     parts.push(`
@@ -38,7 +33,7 @@ export function buildSystemPrompt({ cwd, mode }: SystemPromptParams) {
     `);
   }
 
-  if (cwd && mode === "PLAN") {
+  if (mode === "PLAN") {
     parts.push(`
       ## Tool Usage
       You have these tools available:
@@ -53,7 +48,7 @@ export function buildSystemPrompt({ cwd, mode }: SystemPromptParams) {
       3. **Batch your tool calls.**: Call multiple tools in parallel when possible (e.g. read 5 files at once, not one at a time).`);
   }
 
-  if (cwd && mode === "BUILD") {
+  if (mode === "BUILD") {
     parts.push(`
       ## Tool Usage
       You have these tools available:
