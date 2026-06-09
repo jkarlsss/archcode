@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "archcode",
+      "dependencies": {
+        "dotenv": "^17.4.2",
+      },
     },
     "packages/cli": {
       "name": "@archcode/cli",
