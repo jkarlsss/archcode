@@ -17,9 +17,9 @@ import {
 } from "ai";
 import { Hono } from "hono";
 import { z } from "zod";
-import { isSupportedChatModel, resolveChatModel } from "../lib/model";
-import type { AuthenticatedEnv } from "../middleware/require-auth";
-import { buildSystemPrompt } from "../system-prompt";
+import { isSupportedChatModel, resolveChatModel } from "../lib/model.js";
+import type { AuthenticatedEnv } from "../middleware/require-auth.js";
+import { buildSystemPrompt } from "../system-prompt.js";
 
 type ChatMessageMetadata = {
   mode?: ModeType;
