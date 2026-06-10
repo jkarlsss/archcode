@@ -36,7 +36,10 @@ const submitSchema = z.object({
 });
 
 const submitValidator = zValidator("json", submitSchema, (result, c) => {
-  if (!result.success) return c.json(result.error.issues, 400);
+  if (!result.success) {
+    const errorResult = result as unknown as { error: { issues: unknown[] } };
+    return c.json(errorResult.error.issues, 400)
+  };
 });
 
 // --------------------- Helpers ---------------------
