@@ -1,5 +1,4 @@
 import { db } from "@archcode/database/client";
-import { findSupportChatModel } from "@archcode/shared";
 import { zValidator } from "@hono/zod-validator";
 import * as Sentry from "@sentry/hono/node";
 import { Hono } from "hono";
@@ -34,10 +33,12 @@ const app = new Hono<AuthenticatedEnv>()
       orderBy: {
         createdAt: "desc",
       },
-      select: {
-        id: true,
-        title: true,
-        createdAt: true,
+      include: {
+        messages: {
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
       },
     });
 
@@ -60,13 +61,13 @@ const app = new Hono<AuthenticatedEnv>()
     const session = await db.session.findFirst({
       where: {
         id,
-        userId
+        userId,
       },
       include: {
         messages: {
           orderBy: {
             createdAt: "asc",
-          }
+          },
         },
       },
     });
@@ -82,8 +83,6 @@ const app = new Hono<AuthenticatedEnv>()
       sessionId: id,
       userId,
     });
-
-    
 
     return c.json(session);
   })
@@ -102,7 +101,14 @@ const app = new Hono<AuthenticatedEnv>()
         data: {
           ...data,
           userId,
-        }
+        },
+        include: {
+          messages: {
+            orderBy: {
+              createdAt: "asc",
+            },
+          },
+        },
       });
 
       Sentry.logger.info("Create session", {
