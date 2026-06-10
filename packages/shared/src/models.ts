@@ -3,7 +3,7 @@ export type ModelPricing = {
   outputUsdPerMillionTokens: number;
 };
 
-export type SupportProvider = "anthropic" | "openai" | "google" | "openrouter";
+export type SupportProvider = "anthropic" | "openai" | "google" | "openrouter" | "groq";
 
 type SupportChatModelDefinition = {
   id: string;
@@ -92,7 +92,15 @@ export const SUPPORT_CHAT_MODELS = [
       inputUsdPerMillionTokens: 0.2,
       outputUsdPerMillionTokens: 2.5,
     },
-  }
+  },
+  {
+    id: "qwen/qwen3-32b",
+    provider: "groq",
+    pricing: {
+      inputUsdPerMillionTokens: 0.2,
+      outputUsdPerMillionTokens: 2.5,
+    },
+  },
 ] as const satisfies readonly SupportChatModelDefinition[];
 
 export type SupportChatModel = (typeof SUPPORT_CHAT_MODELS)[number];

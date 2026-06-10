@@ -1,5 +1,6 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { google, type GoogleLanguageModelOptions } from "@ai-sdk/google";
+import { groq, type GroqLanguageModelOptions } from "@ai-sdk/groq";
 import { openai } from "@ai-sdk/openai";
 import type { ProviderOptions } from "@ai-sdk/provider-utils";
 import {
@@ -18,6 +19,7 @@ type OpenRouterModelId = Extract<
   SupportChatModel,
   { mode: "openrouter" }
 >["id"];
+type GroqModelId = Extract<SupportChatModel, { mode: "groq" }>["id"];
 
 export type ResolvedModel = {
   model: LanguageModel;
@@ -81,6 +83,16 @@ const OPENROUTER_PROVIDER_OPTIONS: Partial<
     },
   },
 };
+const GROQ_PROVIDER_OPTIONS: Partial<
+  Record<GroqModelId, ProviderOptions>
+> = {
+  "qwen/qwen3-32b": {
+    groq: {
+      reasoningFormat: 'parsed',
+      reasoningEffort: 'default',
+    } satisfies GroqLanguageModelOptions,
+  },
+};
 
 function assertUnsupportedProvider(provider: never): never {
   throw new Error(`Unsupported provider: ${provider}`);
@@ -126,6 +138,15 @@ function resolveOpenrouterModel(modelId: OpenRouterModelId): ResolvedModel {
   };
 }
 
+function resolveGroqModel(modelId: GroqModelId): ResolvedModel {
+  return {
+    model: groq(modelId),
+    provider: "groq",
+    modelId,
+    providerOptions: GROQ_PROVIDER_OPTIONS[modelId],
+  };
+}
+
 function resolveSupportedModel(model: SupportChatModel): ResolvedModel {
   const provider = model.provider;
 
@@ -138,6 +159,8 @@ function resolveSupportedModel(model: SupportChatModel): ResolvedModel {
       return resolveGoogleModel(model.id as GoogleModelId);
     case "openrouter":
       return resolveOpenrouterModel(model.id as OpenRouterModelId);
+    case "groq":
+      return resolveGroqModel(model.id as GroqModelId);
     default:
       return assertUnsupportedProvider(provider);
   }
