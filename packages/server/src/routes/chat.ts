@@ -38,8 +38,8 @@ const submitSchema = z.object({
 const submitValidator = zValidator("json", submitSchema, (result, c) => {
   if (!result.success) {
     const errorResult = result as unknown as { error: { issues: unknown[] } };
-    return c.json(errorResult.error.issues, 400)
-  };
+    return c.json(errorResult.error.issues, 400);
+  }
 });
 
 // --------------------- Helpers ---------------------
@@ -166,7 +166,11 @@ const app = new Hono<AuthenticatedEnv>().post(
         new Date(b.createdAt ?? 0).getTime(),
     );
 
-    const lastMessage = sortedMessages[sortedMessages.length - 1];
+    let lastMessage;
+
+    if (sortedMessages.length !== 0) {
+      lastMessage = sortedMessages[sortedMessages.length - 1];
+    }
 
     // 4. Build model messages, injecting summary if one exists
     const systemPrompt = buildSystemPrompt({ mode });
@@ -177,7 +181,7 @@ const app = new Hono<AuthenticatedEnv>().post(
     if (latestSummary) {
       const summaryMessage = {
         role: "system" as const,
-        content: `Here is the recent conversation data:${lastMessage}. Previous conversation history summary:\n${latestSummary.summary}`,
+        content: `${lastMessage ? `Here is the recent conversation data:\n${JSON.stringify(lastMessage)}` : ""} Previous conversation history summary:\n${latestSummary.summary}`,
       };
       modelMessages = [
         summaryMessage,
