@@ -64,7 +64,7 @@ function SessionChat({
   };
 }) {
   const [initialMessages] = useState(
-    () => session.messages as unknown as Message[],
+    () => session.messages.map((m) => m.data as unknown as Message) as unknown as Message[],
   );
   const { mode, model } = usePromptConfig();
 

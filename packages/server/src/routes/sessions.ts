@@ -62,6 +62,13 @@ const app = new Hono<AuthenticatedEnv>()
         id,
         userId
       },
+      include: {
+        messages: {
+          orderBy: {
+            createdAt: "asc",
+          }
+        },
+      },
     });
     if (!session) {
       Sentry.logger.warn("Session not found", {
@@ -75,6 +82,8 @@ const app = new Hono<AuthenticatedEnv>()
       sessionId: id,
       userId,
     });
+
+    
 
     return c.json(session);
   })
