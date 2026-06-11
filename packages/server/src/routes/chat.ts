@@ -199,7 +199,7 @@ const app = new Hono<AuthenticatedEnv>().post(
 
     // 4. Stream
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120_000);
+    const timeout = setTimeout(() => controller.abort(), 500_000);
 
     let completeUsage: LanguageModelUsage | null = null;
 
